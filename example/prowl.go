@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/rem7/goprowl"
+	"github.com/cj123/goprowl"
 	"os"
 	"strings"
 )
