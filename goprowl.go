@@ -61,8 +61,8 @@ type apiKeyResponse struct {
 	} `xml:"retrieve"`
 }
 
-// RegisterKey appends an API key to the notification list
-func (c *ProwlClient) RegisterKey(key string) error {
+// AddKey appends an API key to the notification list
+func (c *ProwlClient) AddKey(key string) error {
 
 	if len(key) != 40 {
 		return errors.New("Error, Apikey must be 40 characters long.")

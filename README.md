@@ -1,36 +1,11 @@
-Goprowl
+ProwlApp Client for Go [![GoDoc](https://godoc.org/github.com/cj123/goprowl?status.svg)](https://godoc.org/github.com/cj123/goprowl)
 ===
 
-A wrapper for Prowl, Growl-like iPhone push notifications, written in Go.
+A wrapper for [Prowl](https://www.prowlapp.com/), Growl-like iPhone push notifications, written in Go.
 
-Originally written by Yanko D Sanchez Bolanos, 07/12/2011.
+Originally written by Yanko D Sanchez Bolanos, 07/12/2011. See attached license for more details.
 
 Usage
----
+-----
 
-	var p goprowl.Goprowl
-
-	err := p.RegisterKey("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
-	if err != nil {
-		fmt.Println("Unable to register key! - " + + err.Error())
-		return
-	}
-
-	n := &goprowl.Notification{
-	    Application : "Foo",
-	    Description: "Foobar!",
-	    Event : "Bar",
-		Priority : "1",
-		Providerkey : "",
-		Url: "www.foobar.com",		
-	}
-
-	err = p.Push(n)
-	if err != nil {
-		fmt.Println("Unable to send Prowl notification! - " + + err.Error())
-	}
-	
-	err = p.DelKey("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
-	if err != nil {
-		fmt.Println("Unable to remove key! - " + err.Error())
-	}
+See [example/prowl.go](example/prowl.go) for details.
