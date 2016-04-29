@@ -20,7 +20,7 @@ func TestErrorParsing(t *testing.T) {
 }
 
 func TestRegisterKey(t *testing.T) {
-	var p Goprowl
+	var p ProwlClient
 	if err := p.RegisterKey("12345"); err == nil {
 		t.Fatalf("Register keys not filtering key lenght properly")
 	}
@@ -31,7 +31,7 @@ func TestRegisterKey(t *testing.T) {
 }
 
 func TestDelKey(t *testing.T) {
-	var p Goprowl
+	var p ProwlClient
 
 	if err := p.DelKey("12345"); err == nil {
 		t.Fatalf("DelKey allows deletion of keys that don't exist")

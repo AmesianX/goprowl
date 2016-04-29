@@ -1,30 +1,3 @@
-//
-// Copyright (c) 2011, Yanko D Sanchez Bolanos
-// All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met:
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above copyright
-//       notice, this list of conditions and the following disclaimer in the
-//       documentation and/or other materials provided with the distribution.
-//     * Neither the name of the author nor the
-//       names of its contributors may be used to endorse or promote products
-//       derived from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-// DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
-// DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-// ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//
-
 package goprowl
 
 import (
@@ -41,16 +14,25 @@ const (
 	apiURL = "https://api.prowlapp.com/publicapi"
 )
 
+// Notification is a Prowl notification
 type Notification struct {
 	Application string
 	Description string
 	Event       string
-	Priority    string
-	Providerkey string
+	Priority    int
 	URL         string
 }
 
-type Goprowl struct {
+// NewProwlClient creates a new client for interfacing with Prowl
+func NewProwlClient(providerKey string) ProwlClient {
+	return ProwlClient{
+		ProviderKey: providerKey,
+	}
+}
+
+// ProwlClient is used to interface with Prowl
+type ProwlClient struct {
+	ProviderKey string
 	apikeys []string
 }
 
@@ -80,23 +62,23 @@ type apiKeyResponse struct {
 }
 
 // RegisterKey appends an API key to the notification list
-func (gp *Goprowl) RegisterKey(key string) error {
+func (c *ProwlClient) RegisterKey(key string) error {
 
 	if len(key) != 40 {
 		return errors.New("Error, Apikey must be 40 characters long.")
 	}
 
-	gp.apikeys = append(gp.apikeys, key)
+	c.apikeys = append(c.apikeys, key)
 	return nil
 }
 
 // DelKey removes a key from the notification list
-func (gp *Goprowl) DelKey(key string) error {
-	for i, value := range gp.apikeys {
+func (c *ProwlClient) DelKey(key string) error {
+	for i, value := range c.apikeys {
 		if strings.EqualFold(key, value) {
-			copy(gp.apikeys[i:], gp.apikeys[i+1:])
-			gp.apikeys[len(gp.apikeys)-1] = ""
-			gp.apikeys = gp.apikeys[:len(gp.apikeys)-1]
+			copy(c.apikeys[i:], c.apikeys[i+1:])
+			c.apikeys[len(c.apikeys)-1] = ""
+			c.apikeys = c.apikeys[:len(c.apikeys)-1]
 			return nil
 		}
 	}
@@ -104,46 +86,50 @@ func (gp *Goprowl) DelKey(key string) error {
 }
 
 // Push a notification to ProwlApp
-func (gp *Goprowl) Push(n *Notification) (error) {
+func (c ProwlClient) Push(n Notification) (error) {
 
-	keycsv := strings.Join(gp.apikeys, ",")
+	keycsv := strings.Join(c.apikeys, ",")
 
 	vals := url.Values{
 		"apikey":      []string{keycsv},
 		"application": []string{n.Application},
 		"description": []string{n.Description},
 		"event":       []string{n.Event},
-		"priority":    []string{n.Priority},
+		"priority":    []string{string(n.Priority)},
 	}
 
 	if n.URL != "" {
 		vals["url"] = []string{n.URL}
 	}
 
-	if n.Providerkey != "" {
-		vals["providerkey"] = []string{n.Providerkey}
+	if c.ProviderKey != "" {
+		vals["providerkey"] = []string{c.ProviderKey}
 	}
 
 	r, err := http.PostForm(apiURL+"/add", vals)
 
 	if err != nil {
 		return err
-	} else {
-		defer r.Body.Close()
-		if r.StatusCode != 200 {
-			err = decodeError(r.Status, r.Body)
-		}
 	}
-	
+
+	defer r.Body.Close()
+
+	if r.StatusCode != 200 {
+		err = decodeError(r.Status, r.Body)
+	}
+
 	return err
 }
 
 // RequestToken retrieves a token from the ProwlApp API.
 // Tokens are used to authenticate a user and generate their API key with prowlapp
-func RequestToken(providerKey string) (*Tokens, error) {
+func (c ProwlClient) RequestToken() (*Tokens, error) {
 	body, err := makeHTTPRequestToURL(
 		"GET",
-		apiURL+"/retrieve/token?providerkey="+providerKey,
+		apiURL+"/retrieve/token",
+		map[string]string{
+			"providerkey": c.ProviderKey,
+		},
 		nil,
 	)
 
@@ -160,10 +146,14 @@ func RequestToken(providerKey string) (*Tokens, error) {
 
 // RetrieveAPIKey returns an API key given a token from RequestToken.
 // API keys can be added to lists etc
-func RetrieveAPIKey(providerKey, token string) (string, error) {
+func (c ProwlClient) RetrieveAPIKey(token string) (string, error) {
 	body, err := makeHTTPRequestToURL(
 		"GET",
-		apiURL+"/retrieve/apikey?providerkey="+providerKey+"&token="+token,
+		apiURL+"/retrieve/apikey",
+		map[string]string{
+			"providerkey": c.ProviderKey,
+			"token": token,
+		},
 		nil,
 	)
 
@@ -188,8 +178,18 @@ func decodeError(def string, r io.Reader) (err error) {
 	return
 }
 
-func makeHTTPRequestToURL(requestType, url string, body io.Reader) ([]byte, error) {
+func makeHTTPRequestToURL(requestType, url string, params map[string]string, body io.Reader) ([]byte, error) {
 	req, err := http.NewRequest(requestType, url, body)
+
+	if params != nil {
+		q := req.URL.Query()
+
+		for key, val := range params {
+			q.Add(key, val)
+		}
+
+		req.URL.RawQuery = q.Encode()
+	}
 
 	if err != nil {
 		return nil, err
