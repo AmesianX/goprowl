@@ -27,7 +27,7 @@ func main() {
 
 	client := prowl.NewProwlClient(providerKey)
 
-	if err := client.RegisterKey(apikey); err != nil {
+	if err := client.AddKey(apikey); err != nil {
 		fmt.Fprintf(os.Stderr, "Error registering key:  %v\n", err)
 		os.Exit(1)
 	}
