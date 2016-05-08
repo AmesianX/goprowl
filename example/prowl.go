@@ -10,7 +10,7 @@ import (
 
 var (
 	apikey, application, event, url, providerKey string
-	priority int
+	priority                                     int
 )
 
 func init() {

@@ -14,6 +14,15 @@ const (
 	apiURL = "https://api.prowlapp.com/publicapi"
 )
 
+// ProwlDispatcher defines the methods for interacting with the Prowl API
+type ProwlDispatcher interface {
+	AddKey(key string) error                     // add a key to the request
+	DelKey(key string) error                     // delete a key from the request
+	Push(n Notification) error                   // push the notification
+	RequestToken() (*Tokens, error)              // request an access token
+	RetrieveAPIKey(token string) (string, error) // retrieve an api key from prowlapp
+}
+
 // Notification is a Prowl notification
 type Notification struct {
 	Application string
@@ -24,8 +33,8 @@ type Notification struct {
 }
 
 // NewProwlClient creates a new client for interfacing with Prowl
-func NewProwlClient(providerKey string) ProwlClient {
-	return ProwlClient{
+func NewProwlClient(providerKey string) ProwlDispatcher {
+	return &ProwlClient{
 		ProviderKey: providerKey,
 	}
 }
@@ -33,7 +42,7 @@ func NewProwlClient(providerKey string) ProwlClient {
 // ProwlClient is used to interface with Prowl
 type ProwlClient struct {
 	ProviderKey string
-	apikeys []string
+	apikeys     []string
 }
 
 type errorResponse struct {
@@ -86,7 +95,7 @@ func (c *ProwlClient) DelKey(key string) error {
 }
 
 // Push a notification to ProwlApp
-func (c ProwlClient) Push(n Notification) (error) {
+func (c ProwlClient) Push(n Notification) error {
 
 	keycsv := strings.Join(c.apikeys, ",")
 
@@ -152,7 +161,7 @@ func (c ProwlClient) RetrieveAPIKey(token string) (string, error) {
 		apiURL+"/retrieve/apikey",
 		map[string]string{
 			"providerkey": c.ProviderKey,
-			"token": token,
+			"token":       token,
 		},
 		nil,
 	)
