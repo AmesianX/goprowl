@@ -27,17 +27,17 @@ func main() {
 
 	client := prowl.NewProwlClient(providerKey)
 
-	if err := client.AddKey(apikey); err != nil {
-		fmt.Fprintf(os.Stderr, "Error registering key:  %v\n", err)
-		os.Exit(1)
-	}
-
 	n := prowl.Notification{
 		Application: application,
 		Description: strings.Join(flag.Args(), " "),
 		Event:       event,
 		Priority:    priority,
 		URL:         url,
+	}
+
+	if err := n.AddKey(apikey); err != nil {
+		fmt.Fprintf(os.Stderr, "Error registering key:  %v\n", err)
+		os.Exit(1)
 	}
 
 	if err := client.Push(n); err != nil {

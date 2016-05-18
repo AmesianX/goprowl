@@ -16,8 +16,6 @@ const (
 
 // ProwlDispatcher defines the methods for interacting with the Prowl API
 type ProwlDispatcher interface {
-	AddKey(key string) error                     // add a key to the request
-	DelKey(key string) error                     // delete a key from the request
 	Push(n Notification) error                   // push the notification
 	RequestToken() (*Tokens, error)              // request an access token
 	RetrieveAPIKey(token string) (string, error) // retrieve an api key from prowlapp
@@ -30,6 +28,8 @@ type Notification struct {
 	Event       string
 	Priority    int
 	URL         string
+
+	apikeys []string
 }
 
 // NewProwlClient creates a new client for interfacing with Prowl
@@ -42,7 +42,6 @@ func NewProwlClient(providerKey string) ProwlDispatcher {
 // ProwlClient is used to interface with Prowl
 type ProwlClient struct {
 	ProviderKey string
-	apikeys     []string
 }
 
 type errorResponse struct {
@@ -71,23 +70,23 @@ type apiKeyResponse struct {
 }
 
 // AddKey appends an API key to the notification list
-func (c *ProwlClient) AddKey(key string) error {
+func (n *Notification) AddKey(key string) error {
 
 	if len(key) != 40 {
 		return errors.New("Error, Apikey must be 40 characters long.")
 	}
 
-	c.apikeys = append(c.apikeys, key)
+	n.apikeys = append(n.apikeys, key)
 	return nil
 }
 
 // DelKey removes a key from the notification list
-func (c *ProwlClient) DelKey(key string) error {
-	for i, value := range c.apikeys {
+func (n *Notification) DelKey(key string) error {
+	for i, value := range n.apikeys {
 		if strings.EqualFold(key, value) {
-			copy(c.apikeys[i:], c.apikeys[i+1:])
-			c.apikeys[len(c.apikeys)-1] = ""
-			c.apikeys = c.apikeys[:len(c.apikeys)-1]
+			copy(n.apikeys[i:], n.apikeys[i+1:])
+			n.apikeys[len(n.apikeys)-1] = ""
+			n.apikeys = n.apikeys[:len(n.apikeys)-1]
 			return nil
 		}
 	}
@@ -97,7 +96,7 @@ func (c *ProwlClient) DelKey(key string) error {
 // Push a notification to ProwlApp
 func (c ProwlClient) Push(n Notification) error {
 
-	keycsv := strings.Join(c.apikeys, ",")
+	keycsv := strings.Join(n.apikeys, ",")
 
 	vals := url.Values{
 		"apikey":      []string{keycsv},
