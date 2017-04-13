@@ -207,11 +207,11 @@ func makeHTTPRequestToURL(requestType, url string, params map[string]string, bod
 
 	resp, err := client.Do(req)
 
-	defer resp.Body.Close()
-
 	if err != nil {
 		return nil, err
 	}
+
+	defer resp.Body.Close()
 
 	return ioutil.ReadAll(resp.Body)
 }
